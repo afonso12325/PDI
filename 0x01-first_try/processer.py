@@ -1,14 +1,23 @@
 import cv2
 import numpy as np
-
+from skimage.util import random_noise
 def processer(frame, frame_number):
     #do the processing
     
     
-    
     processed = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    add_hist(processed)
     
+
+    processed = random_noise(processed, mode='s&p')
+    left, right = processed[:,:processed.shape[1]//2] , processed[:,processed.shape[1]//2:]
+    right = cv2.medianBlur(np.float32(right), 5)
+    processed = np.concatenate((left, right), axis=1)
+    #add_hist(processed)
+    #a = np.array(([0, 0, 0], [0, 2, 0], [0, 0, 0]))
+    #b = np.array(([1/9, 1/9, 1/9], [1/9, 1/9, 1/9], [1/9, 1/9, 1/9]))
+
+    #kernel = a-b
+    processed = filter_img(processed, kernel = cv2.getGaussianKernel(ksize=1, sigma=0))
     #show it
     cv2.putText(processed,'PROCESSED IMAGE', (0,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
     cv2.imshow('frame',processed)
@@ -24,4 +33,7 @@ def add_hist(img):
     for i, bin_ in enumerate(h):
         cv2.line(img,(i,img.shape[0]),(i,img.shape[0] - int(bin_*0.01)),(255,255,255))
     return h.reshape((-1)).T
+
+def filter_img(img,kernel = np.ones((3, 3), dtype="float32")/9):
+    return cv2.filter2D(img, -1, kernel)
     
