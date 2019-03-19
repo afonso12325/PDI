@@ -4,7 +4,7 @@ import array
 import numpy as np
 import time
 from PIL import Image as I
-
+from math import atanh
 class Initializer():
     def __init__(self,address = '127.0.0.1', port = 19997):
         print('program started')
@@ -41,8 +41,7 @@ class Camera():
         mask = cv2.inRange(img, 0, 30)
         mask = cv2.medianBlur(mask, 5)
         roi = mask[int(29*mask.shape[0]/30):mask.shape[0],:]	
-        cv2.imshow('robot camera', mask)	
-        cv2.imshow('roi', roi)
+        cv2.imshow('mask', mask)
         sumx=0
         sumy=0
         l=0
@@ -52,25 +51,26 @@ class Camera():
                     sumy+=x
                     sumx+=y
                     l+=1
-        if(l>100):
-            centroid = (sumx/l-roi.shape[1]/2,roi.shape[0] - sumy/l)
+        if(l>0.01*roi.shape[0]*roi.shape[1]):
+            centroid = (sumx/l-roi.shape[1]/2)/(roi.shape[1]/2)
         else:
             centroid = None
         return centroid
 class Controller():
     def __init__(self, clientID, robot):
-        self.ki = 0.3
-        self.kp = 1
-        self.kd = 0
+        self.ki =0
+        self.kp = .75
+        self.kd = .4
         self.I = 0
         self.clientID = clientID
         self.robot = robot
-    def control_pid(self, cent, last_cent):
-        P = self.kp*cent/320
-        self.I += self.ki*(cent/320)
-        D = self.kd*((cent/320)-(last_cent/320))
+    def control_pid(self, cent, last_cent, dt):
+        P = self.kp*cent
+        self.I += self.ki*(cent)
+        D = self.kd*((cent)-(last_cent))
         PID = P+self.I+D
-        self.robot.set_motors(1+PID*1, 1-PID*1)
+        print(PID)
+        self.robot.set_motors(2+PID*2, 2-PID*2)
     def control(self,cent_x):
             if abs(cent_x)<50:
                 self.robot.set_motors(0.5,0.5)
